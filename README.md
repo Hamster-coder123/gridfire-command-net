@@ -40,15 +40,18 @@ The status bar includes a live countdown to splash and, after impact, to enemy c
 Anti-air page:
 
 ```text
-track
-fire 045 32 missile
-fire 050 4 gun
+tracks
+track T1
+fire T1 ir
+fire T1 arh
+fire T1 sarh
+fire T1 gun
 status
 help
 ```
 
 The anti-air scenario includes a small radar scope showing bearing, range rings, and the active air contact blip.
-Contacts are specific aircraft classes with unique radar signatures. Missile and gun hit chances are randomized and affected by aircraft type, range, bearing error, and range error.
+Contacts are specific aircraft classes with unique radar signatures. Additional tracks appear periodically. IR, ARH, SARH, and gun hit chances are randomized and affected by aircraft type, range envelope, altitude, speed, maneuverability, heat signature, and radar signature.
 
 ## Deploy
 

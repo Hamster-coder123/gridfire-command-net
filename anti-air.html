@@ -17,16 +17,16 @@
             <a href="anti-air.html" aria-current="page">Anti-Air</a>
           </nav>
         </div>
-        <button id="newGameButton" type="button">New Contact</button>
+        <button id="newGameButton" type="button">New Watch</button>
       </header>
 
       <section class="status-bar aa-status-bar" aria-live="polite">
         <p><span>Site</span><strong id="siteValue">100%</strong></p>
-        <p><span>Missiles</span><strong id="missileValue">6</strong></p>
-        <p><span>Gun</span><strong id="gunValue">10</strong></p>
-        <p><span>Bearing</span><strong id="bearingValue">---</strong></p>
-        <p><span>Range</span><strong id="rangeValue">---</strong></p>
-        <p><span>Altitude</span><strong id="altitudeValue">---</strong></p>
+        <p><span>IR</span><strong id="irValue">4</strong></p>
+        <p><span>ARH</span><strong id="arhValue">4</strong></p>
+        <p><span>SARH</span><strong id="sarhValue">4</strong></p>
+        <p><span>Tracks</span><strong id="trackCountValue">0</strong></p>
+        <p><span>Priority</span><strong id="priorityValue">---</strong></p>
         <p><span>Timer</span><strong id="timerValue">Ready</strong></p>
       </section>
 
@@ -43,10 +43,7 @@
             <text x="91" y="52">E</text>
             <text x="50" y="97">S</text>
             <text x="8" y="52">W</text>
-            <g id="blipGroup">
-              <circle id="contactBlip" cx="50" cy="50" r="2.6"></circle>
-              <text id="contactLabel" x="54" y="48">CONTACT</text>
-            </g>
+            <g id="blipGroup"></g>
           </svg>
           <div class="radar-readout">
             <p id="radarReadout">No active track.</p>
@@ -69,7 +66,7 @@
             id="commandInput"
             autocomplete="off"
             spellcheck="false"
-            placeholder="Type: fire 045 32 missile, fire 050 4 gun, track, status, or help"
+            placeholder="Type: tracks, track T1, fire T1 arh, fire T2 ir, fire T3 sarh, or help"
           />
           <button id="sendButton" type="submit">Send</button>
         </div>

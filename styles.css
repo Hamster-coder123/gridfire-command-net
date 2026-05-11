@@ -187,12 +187,13 @@ h1 {
   text-anchor: middle;
 }
 
-#contactBlip {
+.radar-blip {
   fill: var(--text);
   stroke: none;
 }
 
-#contactLabel {
+.radar-label {
+  fill: var(--text);
   font-size: 3.2px;
   text-anchor: start;
 }
