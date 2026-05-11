@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Counter-Battery Command Net</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="terminal-shell">
+      <header class="terminal-header">
+        <div>
+          <p class="eyebrow">Fire Direction Center</p>
+          <h1>Counter-Battery Net</h1>
+        </div>
+        <button id="newGameButton" type="button">New Mission</button>
+      </header>
+
+      <section class="status-bar" aria-live="polite">
+        <p><span>Objective</span><strong id="objectiveValue">100%</strong></p>
+        <p><span>HE</span><strong id="ammoHe">18</strong></p>
+        <p><span>Smoke</span><strong id="ammoSmoke">4</strong></p>
+        <p><span>Illum</span><strong id="ammoIllumination">4</strong></p>
+        <p><span>Wind</span><strong id="windValue">E / Light</strong></p>
+        <p><span>Enemy</span><strong id="enemyStatusValue">Hidden</strong></p>
+      </section>
+
+      <section
+        id="chatLog"
+        class="chat-log"
+        aria-live="polite"
+        aria-label="Command chat log"
+      ></section>
+
+      <form id="commandForm" class="command-form">
+        <label for="commandInput">Command</label>
+        <div class="command-row">
+          <input
+            id="commandInput"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Type: fire 045 8.5 he, scan, intel, status, or help"
+          />
+          <button id="sendButton" type="submit">Send</button>
+        </div>
+      </form>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
