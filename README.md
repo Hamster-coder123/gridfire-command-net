@@ -48,6 +48,7 @@ help
 ```
 
 The anti-air scenario includes a small radar scope showing bearing, range rings, and the active air contact blip.
+Contacts are specific aircraft classes with unique radar signatures. Missile and gun hit chances are randomized and affected by aircraft type, range, bearing error, and range error.
 
 ## Deploy
 

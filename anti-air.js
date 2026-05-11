@@ -1,5 +1,67 @@
 const MAX_RADAR_RANGE_KM = 80;
 const COUNTERMEASURE_WINDOW_MS = 10000;
+const AIRCRAFT_TYPES = [
+  {
+    name: "MiG-29 Fulcrum",
+    signature: "sharp intermittent fighter return, high closure, frequent bearing shimmer",
+    radarCode: "F29",
+    hp: 3,
+    speed: [0.72, 0.92],
+    altitude: [5200, 9500],
+    startRange: [58, 78],
+    missileEvasion: 0.14,
+    gunEvasion: 0.18,
+    blipRadius: 2.3,
+  },
+  {
+    name: "Su-24 Fencer",
+    signature: "large strike-aircraft return, steady track, medium altitude ingress",
+    radarCode: "S24",
+    hp: 4,
+    speed: [0.48, 0.66],
+    altitude: [3200, 7200],
+    startRange: [54, 74],
+    missileEvasion: 0.08,
+    gunEvasion: 0.12,
+    blipRadius: 3.1,
+  },
+  {
+    name: "Tu-22M Backfire",
+    signature: "very large bomber return, stable bearing, long-range high-altitude track",
+    radarCode: "B22",
+    hp: 5,
+    speed: [0.42, 0.58],
+    altitude: [7800, 11200],
+    startRange: [62, 80],
+    missileEvasion: 0.04,
+    gunEvasion: 0.34,
+    blipRadius: 3.8,
+  },
+  {
+    name: "Shahed-type UAV",
+    signature: "small low-speed return, weak intermittent echo, low altitude",
+    radarCode: "UAV",
+    hp: 2,
+    speed: [0.22, 0.34],
+    altitude: [600, 1800],
+    startRange: [30, 56],
+    missileEvasion: 0.2,
+    gunEvasion: 0.04,
+    blipRadius: 1.8,
+  },
+  {
+    name: "Cruise Missile",
+    signature: "thin low-altitude return, fast terrain-following track, unstable lock",
+    radarCode: "CM",
+    hp: 2,
+    speed: [0.66, 0.86],
+    altitude: [80, 450],
+    startRange: [28, 58],
+    missileEvasion: 0.24,
+    gunEvasion: 0.08,
+    blipRadius: 1.6,
+  },
+];
 
 const state = {
   siteHealth: 100,
@@ -144,12 +206,14 @@ function startCountdown(label, durationMs) {
 }
 
 function createContact() {
+  const aircraft = AIRCRAFT_TYPES[randomInt(0, AIRCRAFT_TYPES.length - 1)];
+
   return {
+    aircraft,
     bearing: randomInt(15, 345),
-    range: randomFloat(54, 76),
-    altitude: randomInt(3600, 9200),
-    speed: randomFloat(0.34, 0.52),
-    type: Math.random() > 0.5 ? "fast mover" : "low-observable track",
+    range: randomFloat(aircraft.startRange[0], aircraft.startRange[1]),
+    altitude: randomInt(aircraft.altitude[0], aircraft.altitude[1]),
+    speed: randomFloat(aircraft.speed[0], aircraft.speed[1]),
   };
 }
 
@@ -170,10 +234,11 @@ function renderRadar() {
 
   elements.contactBlip.setAttribute("cx", String(x));
   elements.contactBlip.setAttribute("cy", String(y));
+  elements.contactBlip.setAttribute("r", String(contact.aircraft.blipRadius));
   elements.contactLabel.setAttribute("x", String(clamp(x + 4, 8, 78)));
   elements.contactLabel.setAttribute("y", String(clamp(y - 2, 8, 94)));
-  elements.contactLabel.textContent = "BLIP";
-  elements.radarReadout.textContent = `TRACK: ${bearingText(contact.bearing)} / ${rangeText(contact.range)} / ${altitudeText(contact.altitude)}`;
+  elements.contactLabel.textContent = contact.aircraft.radarCode;
+  elements.radarReadout.textContent = `${contact.aircraft.radarCode}: ${bearingText(contact.bearing)} / ${rangeText(contact.range)} / ${altitudeText(contact.altitude)}`;
 }
 
 function renderStatus() {
@@ -207,7 +272,7 @@ function updateContact() {
 
     message("Operations", "New radar acquisition pending.", "pending");
     state.contact = createContact();
-    state.contactHp = 3;
+    state.contactHp = state.contact.aircraft.hp;
   }
 
   renderStatus();
@@ -223,14 +288,48 @@ function gunBurstTime(rangeKm) {
   return Math.round(seconds * 1000);
 }
 
+function rangeEnvelopeScore(rangeKm, weapon) {
+  if (weapon === "missile") {
+    if (rangeKm < 5) return 0.34;
+    if (rangeKm <= 45) return 0;
+    if (rangeKm <= 65) return (rangeKm - 45) * 0.012;
+    return 0.34 + (rangeKm - 65) * 0.025;
+  }
+
+  if (rangeKm <= 5) return 0;
+  if (rangeKm <= 9) return (rangeKm - 5) * 0.08;
+  return 0.42 + (rangeKm - 9) * 0.08;
+}
+
+function solutionQuality(hitChance) {
+  if (hitChance >= 0.75) return "high";
+  if (hitChance >= 0.5) return "medium";
+  if (hitChance >= 0.25) return "poor";
+  return "marginal";
+}
+
+function calculateHitChance(fireBearing, fireRange, weapon) {
+  const contact = state.contact;
+  const bearingError = Math.abs(angularDifference(fireBearing, contact.bearing));
+  const rangeError = Math.abs(fireRange - contact.range);
+  const base = weapon === "missile" ? 0.9 : 0.68;
+  const aircraftPenalty = weapon === "missile" ? contact.aircraft.missileEvasion : contact.aircraft.gunEvasion;
+  const altitudePenalty = contact.altitude > 7500 && weapon === "gun" ? 0.18 : 0;
+  const bearingPenalty = bearingError * (weapon === "missile" ? 0.013 : 0.018);
+  const rangePenalty = rangeError * (weapon === "missile" ? 0.032 : 0.09);
+  const envelopePenalty = rangeEnvelopeScore(fireRange, weapon);
+
+  return clamp(
+    base - aircraftPenalty - altitudePenalty - bearingPenalty - rangePenalty - envelopePenalty,
+    weapon === "missile" ? 0.04 : 0.02,
+    weapon === "missile" ? 0.92 : 0.78,
+  );
+}
+
 function resolveIntercept(fireBearing, fireRange, weapon) {
   if (!state.contact || state.gameOver) return;
 
-  const bearingError = Math.abs(angularDifference(fireBearing, state.contact.bearing));
-  const rangeError = Math.abs(fireRange - state.contact.range);
-  const altitudeFactor = state.contact.altitude > 7500 && weapon === "gun" ? 1.8 : 1;
-  const score = bearingError / 5 + rangeError * altitudeFactor;
-  const hitChance = weapon === "missile" ? clamp(0.92 - score * 0.11, 0.08, 0.92) : clamp(0.72 - score * 0.14, 0.04, 0.72);
+  const hitChance = calculateHitChance(fireBearing, fireRange, weapon);
 
   if (Math.random() < hitChance) {
     const damage = weapon === "missile" ? 2 : 1;
@@ -238,14 +337,18 @@ function resolveIntercept(fireBearing, fireRange, weapon) {
     message(
       "Fire Control",
       state.contactHp <= 0
-        ? "Track broken after intercept. Hostile aircraft destroyed."
-        : "Burst observed near track. Contact damaged but still inbound.",
+        ? `${state.contact.aircraft.name} track broken after intercept. Hostile aircraft destroyed.`
+        : `${state.contact.aircraft.name} damaged. Track remains inbound.`,
       state.contactHp <= 0 ? "success" : "warning",
     );
   } else {
     const rangeCall = fireRange < state.contact.range ? "short" : "long";
     const bearingCall = angularDifference(fireBearing, state.contact.bearing) < 0 ? "left" : "right";
-    message("Fire Control", `No intercept. Correction: ${bearingCall}, ${rangeCall}. Track still inbound.`, "warning");
+    message(
+      "Fire Control",
+      `No intercept. Solution quality was ${solutionQuality(hitChance)}. Correction: ${bearingCall}, ${rangeCall}. ${state.contact.aircraft.name} still inbound.`,
+      "warning",
+    );
   }
 
   if (state.contactHp <= 0) {
@@ -276,7 +379,7 @@ function fireWeapon(bearing, rangeKm, weapon) {
 
   message(
     "Weapons",
-    `${weapon === "missile" ? "Missile" : "Gun burst"} away. Bearing ${bearingText(bearing)}, range ${rangeText(rangeKm)}. Time to intercept ${(flightTime / 1000).toFixed(1)}s.`,
+    `${weapon === "missile" ? "Missile" : "Gun burst"} away. Bearing ${bearingText(bearing)}, range ${rangeText(rangeKm)}. Estimated Pk ${(calculateHitChance(bearing, rangeKm, weapon) * 100).toFixed(0)}%. Time to intercept ${(flightTime / 1000).toFixed(1)}s.`,
     "player",
   );
 
@@ -294,7 +397,8 @@ function showTrack() {
   message(
     "Radar",
     [
-      `Track classified as ${state.contact.type}.`,
+      `Aircraft: ${state.contact.aircraft.name}.`,
+      `Radar signature: ${state.contact.aircraft.signature}.`,
       `Bearing ${bearingText(state.contact.bearing)}.`,
       `Range ${rangeText(state.contact.range)}.`,
       `Altitude ${altitudeText(state.contact.altitude)}.`,
@@ -310,7 +414,7 @@ function showStatus() {
       `Protected site integrity: ${state.siteHealth}%.`,
       `Ammunition: missiles ${state.ammo.missile}, gun bursts ${state.ammo.gun}.`,
       state.contact
-        ? `Active track: ${bearingText(state.contact.bearing)}, ${rangeText(state.contact.range)}, ${altitudeText(state.contact.altitude)}.`
+        ? `Active track: ${state.contact.aircraft.name}, ${bearingText(state.contact.bearing)}, ${rangeText(state.contact.range)}, ${altitudeText(state.contact.altitude)}.`
         : "Active track: none.",
     ].join("\n"),
   );
@@ -327,7 +431,7 @@ function showHelp() {
       "fire 050 4 gun - fire gun burst at bearing 050 deg, range 4 km.",
       "help - show this command list.",
       "",
-      "Use the radar scope and track reports to fire near the current bearing and range. Missiles are best at long range; gun bursts are last-ditch close defense.",
+      "Use the radar scope and track reports to fire near the current bearing and range. Missile hit chance changes by range and aircraft type. Gun bursts are last-ditch close defense.",
     ].join("\n"),
   );
 }
@@ -415,7 +519,7 @@ function resetGame() {
   state.siteHealth = 100;
   state.ammo = { missile: 6, gun: 10 };
   state.contact = createContact();
-  state.contactHp = 3;
+  state.contactHp = state.contact.aircraft.hp;
   state.busy = false;
   state.gameOver = false;
   elements.chatLog.innerHTML = "";

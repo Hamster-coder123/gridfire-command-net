@@ -13,10 +13,12 @@
 }
 
 body {
+  height: 100vh;
   min-height: 100vh;
   margin: 0;
   color: var(--text);
   background: var(--bg);
+  overflow: hidden;
 }
 
 button,
@@ -41,12 +43,14 @@ button:disabled {
 
 .terminal-shell {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 14px;
   width: min(1050px, 100%);
+  height: 100vh;
   min-height: 100vh;
   margin: 0 auto;
   padding: 18px;
+  overflow: hidden;
 }
 
 .terminal-header {
@@ -123,7 +127,8 @@ h1 {
 }
 
 .chat-log {
-  min-height: 460px;
+  min-height: 0;
+  height: 100%;
   overflow: auto;
   border: 1px solid var(--line);
   background: #000;
@@ -131,7 +136,7 @@ h1 {
 }
 
 .radar-shell {
-  width: min(1180px, 100%);
+  width: min(1320px, 100%);
 }
 
 .aa-status-bar {
@@ -140,14 +145,17 @@ h1 {
 
 .radar-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 1fr;
+  grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
   gap: 14px;
-  min-height: 460px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .radar-panel {
   border: 1px solid var(--line);
   padding: 14px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .radar-panel h2 {
@@ -159,7 +167,7 @@ h1 {
 .radar-panel svg {
   display: block;
   width: 100%;
-  max-width: 330px;
+  max-width: 430px;
   margin: 0 auto;
   border: 1px solid var(--line);
   background: #000;
@@ -270,8 +278,17 @@ input:focus {
 }
 
 @media (max-width: 760px) {
+  body {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+  }
+
   .terminal-shell {
     padding: 12px;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
   .terminal-header {
@@ -285,6 +302,7 @@ input:focus {
 
   .radar-layout {
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .command-row {
