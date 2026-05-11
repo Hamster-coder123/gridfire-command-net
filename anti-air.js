@@ -141,7 +141,9 @@ const state = {
   siteHealth: 100,
   ammo: { ir: 4, arh: 4, sarh: 4, gun: 10 },
   tracks: [],
+  missiles: [],
   nextTrackNumber: 1,
+  nextMissileNumber: 1,
   busy: false,
   gameOver: false,
   activeTimers: [],
@@ -249,6 +251,14 @@ function clearCountdown() {
 }
 
 function updateCountdownDisplay() {
+  const nextMissile = getNextMissile();
+
+  if (nextMissile) {
+    const remaining = Math.max(0, nextMissile.impactTime - Date.now());
+    elements.timerValue.textContent = `${nextMissile.id} splash ${(remaining / 1000).toFixed(1)}s`;
+    return;
+  }
+
   if (!state.countdownDeadline) {
     elements.timerValue.textContent = state.countdownLabel;
     return;
@@ -274,6 +284,11 @@ function startCountdown(label, durationMs) {
   state.countdownLabel = label;
   state.countdownDeadline = Date.now() + durationMs;
   updateCountdownDisplay();
+  state.countdownInterval = window.setInterval(updateCountdownDisplay, 100);
+}
+
+function ensureCountdownLoop() {
+  if (state.countdownInterval) return;
   state.countdownInterval = window.setInterval(updateCountdownDisplay, 100);
 }
 
@@ -338,10 +353,46 @@ function findTrack(id) {
   return state.tracks.find((track) => track.id.toLowerCase() === id.toLowerCase());
 }
 
+function getNextMissile() {
+  if (state.missiles.length === 0) return null;
+  return [...state.missiles].sort((a, b) => a.impactTime - b.impactTime)[0];
+}
+
+function missilePosition(missile) {
+  const now = Date.now();
+  const progress = clamp((now - missile.launchTime) / (missile.impactTime - missile.launchTime), 0, 1);
+  const range = missile.launchRange * progress;
+  const radians = (normalizeBearing(missile.launchBearing) * Math.PI) / 180;
+
+  return {
+    bearing: missile.launchBearing,
+    range,
+    progress,
+    x: 50 + Math.sin(radians) * clamp(range / MAX_RADAR_RANGE_KM, 0, 1) * 45,
+    y: 50 - Math.cos(radians) * clamp(range / MAX_RADAR_RANGE_KM, 0, 1) * 45,
+  };
+}
+
+function missileIconPath(x, y, weaponKey) {
+  if (weaponKey === "gun") {
+    return `${x - 3},${y - 0.8} ${x - 0.8},${y - 0.8} ${x - 0.8},${y - 3} ${x + 0.8},${y - 3} ${x + 0.8},${y - 0.8} ${x + 3},${y - 0.8} ${x + 3},${y + 0.8} ${x + 0.8},${y + 0.8} ${x + 0.8},${y + 3} ${x - 0.8},${y + 3} ${x - 0.8},${y + 0.8} ${x - 3},${y + 0.8}`;
+  }
+
+  if (weaponKey === "ir") {
+    return `${x},${y - 2.8} ${x - 2.6},${y + 2.2} ${x + 2.6},${y + 2.2}`;
+  }
+
+  if (weaponKey === "arh") {
+    return `${x - 2.5},${y - 2.5} ${x + 2.5},${y - 2.5} ${x + 2.5},${y + 2.5} ${x - 2.5},${y + 2.5}`;
+  }
+
+  return `${x},${y - 3} ${x + 3},${y} ${x},${y + 3} ${x - 3},${y}`;
+}
+
 function renderRadar() {
   elements.blipGroup.innerHTML = "";
 
-  if (state.tracks.length === 0 || state.gameOver) {
+  if (state.gameOver) {
     elements.radarReadout.textContent = "No active tracks.";
     return;
   }
@@ -367,10 +418,32 @@ function renderRadar() {
     elements.blipGroup.append(blip, label);
   }
 
+  for (const missile of state.missiles) {
+    const position = missilePosition(missile);
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+
+    icon.setAttribute("class", `missile-icon missile-${missile.weaponKey}`);
+    icon.setAttribute("points", missileIconPath(position.x, position.y, missile.weaponKey));
+
+    label.setAttribute("class", "missile-label");
+    label.setAttribute("x", String(clamp(position.x + 3.5, 8, 78)));
+    label.setAttribute("y", String(clamp(position.y + 4, 8, 94)));
+    label.textContent = missile.id;
+
+    elements.blipGroup.append(icon, label);
+  }
+
   const priority = getPriorityTrack();
+  const missileLine =
+    state.missiles.length > 0
+      ? `\nMISSILES: ${state.missiles
+          .map((missile) => `${missile.id}->${missile.trackId} ${Math.max(0, (missile.impactTime - Date.now()) / 1000).toFixed(1)}s`)
+          .join(" | ")}`
+      : "";
   elements.radarReadout.textContent = priority
-    ? `PRIORITY ${priority.id}: ${priority.aircraft.radarCode} / ${bearingText(priority.bearing)} / ${rangeText(priority.range)} / ${altitudeText(priority.altitude)}`
-    : "No active tracks.";
+    ? `PRIORITY ${priority.id}: ${priority.aircraft.radarCode} / ${bearingText(priority.bearing)} / ${rangeText(priority.range)} / ${altitudeText(priority.altitude)}${missileLine}`
+    : `No active tracks.${missileLine}`;
 }
 
 function renderStatus() {
@@ -482,12 +555,19 @@ function solutionQuality(hitChance) {
   return "marginal";
 }
 
-function resolveIntercept(trackId, weaponKey) {
+function resolveIntercept(missileId) {
+  const missile = state.missiles.find((candidate) => candidate.id === missileId);
+  if (!missile) return;
+
+  state.missiles = state.missiles.filter((candidate) => candidate !== missile);
+  if (state.missiles.length === 0) {
+    clearCountdown();
+  }
+
+  const { trackId, weaponKey } = missile;
   const track = findTrack(trackId);
   if (!track || state.gameOver) {
-    message("Fire Control", `${trackId} lost before intercept. No result.`, "warning");
-    state.busy = false;
-    clearCountdown();
+    message("Fire Control", `${missileId} lost ${trackId} before splash. No intercept result.`, "warning");
     renderStatus();
     return;
   }
@@ -516,19 +596,12 @@ function resolveIntercept(trackId, weaponKey) {
     );
   }
 
-  state.busy = false;
-  clearCountdown();
   renderStatus();
   elements.commandInput.focus();
 }
 
 function fireWeapon(trackId, weaponKey) {
   const track = findTrack(trackId);
-
-  if (state.busy) {
-    message("Operations", "Engagement already active. Wait for intercept result.", "warning");
-    return;
-  }
 
   if (!track) {
     message("Operations", `No track ${trackId.toUpperCase()} on scope. Use tracks to list active contacts.`, "warning");
@@ -545,20 +618,30 @@ function fireWeapon(trackId, weaponKey) {
     return;
   }
 
-  state.busy = true;
   state.ammo[weaponKey] -= 1;
   const flightTime = weaponFlightTime(track.range, weaponKey);
   const pk = calculateHitChance(track, weaponKey);
+  const missile = {
+    id: `M${state.nextMissileNumber}`,
+    trackId: track.id,
+    weaponKey,
+    launchBearing: track.bearing,
+    launchRange: track.range,
+    launchTime: Date.now(),
+    impactTime: Date.now() + flightTime,
+  };
+  state.nextMissileNumber += 1;
+  state.missiles.push(missile);
 
   message(
     "Weapons",
-    `${WEAPONS[weaponKey].label} away on ${track.id}. ${track.aircraft.name}, bearing ${bearingText(track.bearing)}, range ${rangeText(track.range)}. Estimated Pk ${(pk * 100).toFixed(0)}%. Time to intercept ${(flightTime / 1000).toFixed(1)}s.`,
+    `${missile.id} ${WEAPONS[weaponKey].label} away on ${track.id}. ${track.aircraft.name}, bearing ${bearingText(track.bearing)}, range ${rangeText(track.range)}. Estimated Pk ${(pk * 100).toFixed(0)}%. Splash in ${(flightTime / 1000).toFixed(1)}s.`,
     "player",
   );
 
-  startCountdown("Intercept", flightTime);
+  ensureCountdownLoop();
   renderStatus();
-  setTimer(() => resolveIntercept(track.id, weaponKey), flightTime);
+  setTimer(() => resolveIntercept(missile.id), flightTime);
 }
 
 function formatTrack(track) {
@@ -621,7 +704,7 @@ function showHelp() {
       "fire T1 gun - fire close-defense gun burst at T1.",
       "help - show this command list.",
       "",
-      "IR favors hot, close aircraft. ARH is the most flexible radar-guided option. SARH favors bright radar returns but suffers against low terrain-following contacts.",
+      "Multiple missiles can be in flight at once. Radar icons: triangle IR, square ARH, diamond SARH. IR favors hot, close aircraft. ARH is the most flexible radar-guided option. SARH favors bright radar returns but suffers against low terrain-following contacts.",
     ].join("\n"),
   );
 }
@@ -706,7 +789,9 @@ function resetGame() {
   state.siteHealth = 100;
   state.ammo = { ir: 4, arh: 4, sarh: 4, gun: 10 };
   state.tracks = [];
+  state.missiles = [];
   state.nextTrackNumber = 1;
+  state.nextMissileNumber = 1;
   state.busy = false;
   state.gameOver = false;
   elements.chatLog.innerHTML = "";

@@ -52,6 +52,7 @@ help
 
 The anti-air scenario includes a small radar scope showing bearing, range rings, and the active air contact blip.
 Contacts are specific aircraft classes with unique radar signatures. Additional tracks appear periodically. IR, ARH, SARH, and gun hit chances are randomized and affected by aircraft type, range envelope, altitude, speed, maneuverability, heat signature, and radar signature.
+Multiple missiles can be in flight at once. The radar scope displays in-flight missiles with separate icons and the status timer counts down to the next missile splash.
 
 ## Deploy
 
