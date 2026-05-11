@@ -31,6 +31,8 @@ help
 
 Fire missions use bearing in degrees and range in kilometers. Intelligence reports provide approximate bearings, ranges, and correction calls.
 
+Shell flight uses a simplified indirect-fire time table. The browser wait matches the reported time of flight, then enemy counterfire is scheduled from the remaining part of a 10-second response window.
+
 ## Deploy
 
 This is a plain static site. Deploy the repository root with any static host, including GitHub Pages, Netlify, Vercel, Cloudflare Pages, or itch.io HTML hosting.

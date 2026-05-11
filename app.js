@@ -1,5 +1,5 @@
-const AREA_SIZE_KM = 12;
 const BATTERY_POSITION = { x: 1, y: 11 };
+const COUNTERFIRE_WINDOW_MS = 10000;
 
 const shellLabels = {
   he: "high explosive",
@@ -92,8 +92,8 @@ function bearingRangeToPosition(bearing, rangeKm) {
   const radians = (normalizeBearing(bearing) * Math.PI) / 180;
 
   return {
-    x: clamp(BATTERY_POSITION.x + Math.sin(radians) * rangeKm, 0, AREA_SIZE_KM),
-    y: clamp(BATTERY_POSITION.y - Math.cos(radians) * rangeKm, 0, AREA_SIZE_KM),
+    x: BATTERY_POSITION.x + Math.sin(radians) * rangeKm,
+    y: BATTERY_POSITION.y - Math.cos(radians) * rangeKm,
   };
 }
 
@@ -198,9 +198,9 @@ function generateEnemyClues() {
   }
 }
 
-function calculateTravelTime(target) {
-  const range = distance(BATTERY_POSITION, target);
-  return clamp(1200 + range * 280, 1400, 5200);
+function calculateTravelTime(rangeKm) {
+  const seconds = 6 + rangeKm * 2.35 + rangeKm * rangeKm * 0.055;
+  return Math.round(seconds * 1000);
 }
 
 function scatterTarget(target, shell) {
@@ -208,8 +208,8 @@ function scatterTarget(target, shell) {
   const windPushKm = shell === "smoke" ? (state.wind.strength + 1) * 0.35 : state.wind.strength * 0.25;
 
   return {
-    x: clamp(target.x + randomFloat(-scatterKm, scatterKm) + state.wind.dx * windPushKm, 0, AREA_SIZE_KM),
-    y: clamp(target.y + randomFloat(-scatterKm, scatterKm) + state.wind.dy * windPushKm, 0, AREA_SIZE_KM),
+    x: target.x + randomFloat(-scatterKm, scatterKm) + state.wind.dx * windPushKm,
+    y: target.y + randomFloat(-scatterKm, scatterKm) + state.wind.dy * windPushKm,
   };
 }
 
@@ -316,13 +316,18 @@ function enemyFire() {
 }
 
 function scheduleEnemyResponse(travelTime) {
-  const remainingWindow = Math.max(800, 10000 - travelTime);
-  const enemyDelay = randomFloat(800, remainingWindow);
+  const remainingWindow = Math.max(0, COUNTERFIRE_WINDOW_MS - travelTime);
+  const enemyDelay =
+    remainingWindow > 0 ? randomFloat(0, remainingWindow) : randomFloat(250, 750);
   const totalSeconds = ((travelTime + enemyDelay) / 1000).toFixed(1);
+  const windowText =
+    remainingWindow > 0
+      ? `Remaining counterfire window after impact: ${(remainingWindow / 1000).toFixed(1)}s.`
+      : "Shell flight exceeded the 10.0s counterfire window; response may arrive immediately after impact.";
 
   message(
     "Operations",
-    `Enemy may answer within the 10-second counterfire window. Current estimate: response by T+${totalSeconds}s.`,
+    `${windowText} Current estimate: response by T+${totalSeconds}s from launch.`,
     "pending",
   );
 
@@ -358,12 +363,12 @@ function fireShell(target, shell, fireBearing, fireRange) {
   state.ammo[shell] -= 1;
   renderStatus();
 
-  const travelTime = calculateTravelTime(target);
+  const travelTime = calculateTravelTime(fireRange);
   const seconds = (travelTime / 1000).toFixed(1);
 
   message(
     "Fire Direction",
-    `Fire mission accepted: ${shellLabels[shell]}, bearing ${bearingText(fireBearing)}, range ${rangeText(fireRange)}. Time of flight ${seconds}s.`,
+    `Fire mission accepted: ${shellLabels[shell]}, bearing ${bearingText(fireBearing)}, range ${rangeText(fireRange)}. Estimated time of flight ${seconds}s.`,
     "player",
   );
 
@@ -418,6 +423,7 @@ function showHelp() {
       "status - show protected site condition, ammunition, wind, and enemy status.",
       "help - show this command list.",
       "",
+      "Time of flight uses a simplified indirect-fire table and the wait is real time.",
       "Use intelligence reports to estimate bearing and range. Spotters will report short/over and left/right corrections after impact.",
     ].join("\n"),
   );
