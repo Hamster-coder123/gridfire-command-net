@@ -2,9 +2,9 @@
   color-scheme: dark;
   --bg: #000;
   --panel: #000;
-  --line: #fff;
-  --text: #fff;
-  --muted: #fff;
+  --line: #00ff66;
+  --text: #00ff66;
+  --muted: #00ff66;
   font-family: "Courier New", Courier, monospace;
 }
 
@@ -28,7 +28,7 @@ button {
   min-height: 42px;
   border: 1px solid var(--line);
   color: #000;
-  background: #fff;
+  background: #00ff66;
   font-weight: 800;
   cursor: pointer;
 }
@@ -65,7 +65,7 @@ p {
 
 .eyebrow {
   margin-bottom: 6px;
-  color: #fff;
+  color: #00ff66;
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -78,7 +78,7 @@ h1 {
 
 .status-bar {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 8px;
 }
 
@@ -98,7 +98,7 @@ h1 {
 }
 
 .status-bar strong {
-  color: #fff;
+  color: #00ff66;
   font-size: 1rem;
 }
 
@@ -127,7 +127,7 @@ h1 {
 .message .sender {
   display: block;
   margin-bottom: 4px;
-  color: #fff;
+  color: #00ff66;
   font-size: 0.74rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -135,11 +135,11 @@ h1 {
 
 .message.player {
   margin-left: auto;
-  border-left-color: #fff;
+  border-left-color: #00ff66;
 }
 
 .message.pending {
-  color: #fff;
+  color: #00ff66;
 }
 
 .command-form {
@@ -175,7 +175,7 @@ input {
 }
 
 input:focus {
-  border-color: #fff;
+  border-color: #00ff66;
 }
 
 @media (max-width: 760px) {

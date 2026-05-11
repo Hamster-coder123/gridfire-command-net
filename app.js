@@ -31,6 +31,9 @@ const state = {
   gameOver: false,
   busy: false,
   activeTimers: [],
+  countdownInterval: null,
+  countdownDeadline: 0,
+  countdownLabel: "Ready",
   clueMemory: [],
   shotCount: 0,
 };
@@ -47,6 +50,7 @@ const elements = {
   ammoIllumination: document.querySelector("#ammoIllumination"),
   windValue: document.querySelector("#windValue"),
   enemyStatusValue: document.querySelector("#enemyStatusValue"),
+  timerValue: document.querySelector("#timerValue"),
 };
 
 function randomInt(min, max) {
@@ -151,6 +155,49 @@ function clearTimers() {
   }
 
   state.activeTimers = [];
+  clearCountdown();
+}
+
+function clearCountdown() {
+  if (state.countdownInterval) {
+    window.clearInterval(state.countdownInterval);
+  }
+
+  state.countdownInterval = null;
+  state.countdownDeadline = 0;
+  state.countdownLabel = "Ready";
+  updateCountdownDisplay();
+}
+
+function updateCountdownDisplay() {
+  if (!elements.timerValue) return;
+
+  if (!state.countdownDeadline) {
+    elements.timerValue.textContent = state.countdownLabel;
+    return;
+  }
+
+  const remaining = Math.max(0, state.countdownDeadline - Date.now());
+  elements.timerValue.textContent = `${state.countdownLabel} ${(remaining / 1000).toFixed(1)}s`;
+
+  if (remaining <= 0 && state.countdownInterval) {
+    window.clearInterval(state.countdownInterval);
+    state.countdownInterval = null;
+    state.countdownDeadline = 0;
+    state.countdownLabel = "Resolving";
+    elements.timerValue.textContent = "Resolving";
+  }
+}
+
+function startCountdown(label, durationMs) {
+  if (state.countdownInterval) {
+    window.clearInterval(state.countdownInterval);
+  }
+
+  state.countdownLabel = label;
+  state.countdownDeadline = Date.now() + durationMs;
+  updateCountdownDisplay();
+  state.countdownInterval = window.setInterval(updateCountdownDisplay, 100);
 }
 
 function renderStatus() {
@@ -162,6 +209,7 @@ function renderStatus() {
   elements.enemyStatusValue.textContent =
     state.enemyHp <= 0 ? "Destroyed" : state.gameOver ? "Resolved" : "Unlocated";
   elements.sendButton.disabled = state.gameOver;
+  updateCountdownDisplay();
 }
 
 function rangeBand(origin, target) {
@@ -291,6 +339,7 @@ function enemyFire() {
   if (state.gameOver) return;
 
   state.busy = false;
+  clearCountdown();
   const suppressed = Date.now() < state.enemySuppressedUntil;
   const damage = suppressed ? randomInt(4, 8) : randomInt(10, 16);
   state.objectiveHealth = clamp(state.objectiveHealth - damage, 0, 100);
@@ -332,6 +381,7 @@ function scheduleEnemyResponse(travelTime) {
   );
 
   setTimer(enemyFire, enemyDelay);
+  startCountdown("Counterfire", enemyDelay);
 }
 
 function relocateEnemy() {
@@ -371,6 +421,8 @@ function fireShell(target, shell, fireBearing, fireRange) {
     `Fire mission accepted: ${shellLabels[shell]}, bearing ${bearingText(fireBearing)}, range ${rangeText(fireRange)}. Estimated time of flight ${seconds}s.`,
     "player",
   );
+
+  startCountdown("Splash", travelTime);
 
   setTimer(() => {
     if (state.gameOver) return;
