@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anti-Air Battery Command Net</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="terminal-shell radar-shell">
+      <header class="terminal-header">
+        <div>
+          <p class="eyebrow">Air Defense Fire Control</p>
+          <h1>Anti-Air Battery Net</h1>
+          <nav class="site-nav" aria-label="Scenario navigation">
+            <a href="index.html">Counter-Battery</a>
+            <a href="anti-air.html" aria-current="page">Anti-Air</a>
+          </nav>
+        </div>
+        <button id="newGameButton" type="button">New Contact</button>
+      </header>
+
+      <section class="status-bar aa-status-bar" aria-live="polite">
+        <p><span>Site</span><strong id="siteValue">100%</strong></p>
+        <p><span>Missiles</span><strong id="missileValue">6</strong></p>
+        <p><span>Gun</span><strong id="gunValue">10</strong></p>
+        <p><span>Bearing</span><strong id="bearingValue">---</strong></p>
+        <p><span>Range</span><strong id="rangeValue">---</strong></p>
+        <p><span>Altitude</span><strong id="altitudeValue">---</strong></p>
+        <p><span>Timer</span><strong id="timerValue">Ready</strong></p>
+      </section>
+
+      <section class="radar-layout">
+        <aside class="radar-panel" aria-label="Radar scope">
+          <h2>Radar Scope</h2>
+          <svg id="radarScope" viewBox="0 0 100 100" role="img" aria-label="Range and bearing radar display">
+            <circle cx="50" cy="50" r="45"></circle>
+            <circle cx="50" cy="50" r="30"></circle>
+            <circle cx="50" cy="50" r="15"></circle>
+            <line x1="50" y1="5" x2="50" y2="95"></line>
+            <line x1="5" y1="50" x2="95" y2="50"></line>
+            <text x="50" y="9">N</text>
+            <text x="91" y="52">E</text>
+            <text x="50" y="97">S</text>
+            <text x="8" y="52">W</text>
+            <g id="blipGroup">
+              <circle id="contactBlip" cx="50" cy="50" r="2.6"></circle>
+              <text id="contactLabel" x="54" y="48">CONTACT</text>
+            </g>
+          </svg>
+          <div class="radar-readout">
+            <p id="radarReadout">No active track.</p>
+            <p>Outer ring: 80 km. Middle ring: 53 km. Inner ring: 27 km.</p>
+          </div>
+        </aside>
+
+        <section
+          id="chatLog"
+          class="chat-log"
+          aria-live="polite"
+          aria-label="Air defense command chat log"
+        ></section>
+      </section>
+
+      <form id="commandForm" class="command-form">
+        <label for="commandInput">Command</label>
+        <div class="command-row">
+          <input
+            id="commandInput"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Type: fire 045 32 missile, fire 050 4 gun, track, status, or help"
+          />
+          <button id="sendButton" type="submit">Send</button>
+        </div>
+      </form>
+    </main>
+
+    <script src="anti-air.js"></script>
+  </body>
+</html>

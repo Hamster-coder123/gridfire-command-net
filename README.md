@@ -20,6 +20,8 @@ http://127.0.0.1:5173/
 
 ## Commands
 
+Counter-battery page:
+
 ```text
 fire 045 8.5 he
 fire 070 6 smoke
@@ -34,6 +36,18 @@ Fire missions use bearing in degrees and range in kilometers. Intelligence repor
 Shell flight uses a simplified indirect-fire time table. The browser wait matches the reported time of flight, then enemy counterfire is scheduled from the remaining part of a 10-second response window.
 
 The status bar includes a live countdown to splash and, after impact, to enemy counterfire.
+
+Anti-air page:
+
+```text
+track
+fire 045 32 missile
+fire 050 4 gun
+status
+help
+```
+
+The anti-air scenario includes a small radar scope showing bearing, range rings, and the active air contact blip.
 
 ## Deploy
 
