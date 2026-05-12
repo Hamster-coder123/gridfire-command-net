@@ -1,5 +1,4 @@
 const BATTERY_POSITION = { x: 1, y: 11 };
-const COUNTERFIRE_WINDOW_MS = 10000;
 
 const shellLabels = {
   he: "high explosive",
@@ -346,7 +345,7 @@ function enemyFire() {
 
   message(
     "Enemy Battery",
-    `Enemy counterfire received after a random delay. Protected site takes ${damage}% damage.`,
+    `Enemy return fire impacts the protected site for ${damage}% damage.`,
     "danger",
   );
   generateEnemyClues();
@@ -364,24 +363,21 @@ function enemyFire() {
   elements.commandInput.focus();
 }
 
-function scheduleEnemyResponse(travelTime) {
-  const remainingWindow = Math.max(0, COUNTERFIRE_WINDOW_MS - travelTime);
-  const enemyDelay =
-    remainingWindow > 0 ? randomFloat(0, remainingWindow) : randomFloat(250, 750);
-  const totalSeconds = ((travelTime + enemyDelay) / 1000).toFixed(1);
-  const windowText =
-    remainingWindow > 0
-      ? `Remaining counterfire window after impact: ${(remainingWindow / 1000).toFixed(1)}s.`
-      : "Shell flight exceeded the 10.0s counterfire window; response may arrive immediately after impact.";
+function calculateEnemyTravelTime(playerTravelTime) {
+  return Math.round(playerTravelTime * randomFloat(0.9, 1.1));
+}
+
+function scheduleEnemyResponse(playerTravelTime) {
+  const enemyTravelTime = calculateEnemyTravelTime(playerTravelTime);
 
   message(
     "Operations",
-    `${windowText} Current estimate: response by T+${totalSeconds}s from launch.`,
+    `Enemy return fire detected after our splash. Incoming shell time of flight ${(enemyTravelTime / 1000).toFixed(1)}s.`,
     "pending",
   );
 
-  setTimer(enemyFire, enemyDelay);
-  startCountdown("Counterfire", enemyDelay);
+  setTimer(enemyFire, enemyTravelTime);
+  startCountdown("Counterfire", enemyTravelTime);
 }
 
 function relocateEnemy() {
@@ -476,6 +472,7 @@ function showHelp() {
       "help - show this command list.",
       "",
       "Time of flight uses a simplified indirect-fire table and the wait is real time.",
+      "Enemy return fire timer starts after your splash and uses a similar shell flight duration.",
       "Use intelligence reports to estimate bearing and range. Spotters will report short/over and left/right corrections after impact.",
     ].join("\n"),
   );

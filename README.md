@@ -33,7 +33,7 @@ help
 
 Fire missions use bearing in degrees and range in kilometers. Intelligence reports provide approximate bearings, ranges, and correction calls.
 
-Shell flight uses a simplified indirect-fire time table. The browser wait matches the reported time of flight, then enemy counterfire is scheduled from the remaining part of a 10-second response window.
+Shell flight uses a simplified indirect-fire time table. The browser wait matches the reported time of flight. Enemy return fire starts after your splash and uses a similar shell flight duration.
 
 The status bar includes a live countdown to splash and, after impact, to enemy counterfire.
 
