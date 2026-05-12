@@ -30,12 +30,37 @@
         <p><span>Timer</span><strong id="timerValue">Ready</strong></p>
       </section>
 
-      <section
-        id="chatLog"
-        class="chat-log"
-        aria-live="polite"
-        aria-label="Command chat log"
-      ></section>
+      <section class="counter-layout">
+        <aside class="artillery-panel" aria-label="Artillery fire visualization">
+          <h2>Battery / Trajectory</h2>
+          <svg id="artilleryScope" viewBox="0 0 220 150" role="img" aria-label="Artillery battery and shell arc">
+            <line class="ground-line" x1="12" y1="130" x2="208" y2="130"></line>
+            <g class="battery-graphic" aria-label="Artillery battery">
+              <rect x="24" y="114" width="42" height="10"></rect>
+              <circle cx="34" cy="128" r="6"></circle>
+              <circle cx="56" cy="128" r="6"></circle>
+              <line x1="58" y1="114" x2="91" y2="98"></line>
+              <line x1="59" y1="118" x2="93" y2="102"></line>
+              <rect x="26" y="104" width="28" height="12"></rect>
+            </g>
+            <path id="arcPath" class="arc-path" d="M 82 102 Q 112 12 182 112"></path>
+            <path id="arcProgress" class="arc-progress" d="M 82 102 Q 112 12 182 112"></path>
+            <circle id="shellMarker" class="shell-marker" cx="82" cy="102" r="3"></circle>
+            <line class="splash-marker" x1="177" y1="113" x2="187" y2="123"></line>
+            <line class="splash-marker" x1="187" y1="113" x2="177" y2="123"></line>
+            <text x="44" y="96">BATTERY</text>
+            <text id="arcLabel" x="110" y="145">READY</text>
+          </svg>
+          <p id="arcReadout" class="arc-readout">No fire mission active.</p>
+        </aside>
+
+        <section
+          id="chatLog"
+          class="chat-log"
+          aria-live="polite"
+          aria-label="Command chat log"
+        ></section>
+      </section>
 
       <form id="commandForm" class="command-form">
         <label for="commandInput">Command</label>

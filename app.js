@@ -33,6 +33,9 @@ const state = {
   countdownInterval: null,
   countdownDeadline: 0,
   countdownLabel: "Ready",
+  arcDeadline: 0,
+  arcDuration: 0,
+  arcLabel: "READY",
   clueMemory: [],
   shotCount: 0,
 };
@@ -50,6 +53,11 @@ const elements = {
   windValue: document.querySelector("#windValue"),
   enemyStatusValue: document.querySelector("#enemyStatusValue"),
   timerValue: document.querySelector("#timerValue"),
+  arcPath: document.querySelector("#arcPath"),
+  arcProgress: document.querySelector("#arcProgress"),
+  shellMarker: document.querySelector("#shellMarker"),
+  arcLabel: document.querySelector("#arcLabel"),
+  arcReadout: document.querySelector("#arcReadout"),
 };
 
 function randomInt(min, max) {
@@ -165,11 +173,13 @@ function clearCountdown() {
   state.countdownInterval = null;
   state.countdownDeadline = 0;
   state.countdownLabel = "Ready";
+  clearArc();
   updateCountdownDisplay();
 }
 
 function updateCountdownDisplay() {
   if (!elements.timerValue) return;
+  updateArcDisplay();
 
   if (!state.countdownDeadline) {
     elements.timerValue.textContent = state.countdownLabel;
@@ -195,8 +205,69 @@ function startCountdown(label, durationMs) {
 
   state.countdownLabel = label;
   state.countdownDeadline = Date.now() + durationMs;
+  startArc(label, durationMs);
   updateCountdownDisplay();
   state.countdownInterval = window.setInterval(updateCountdownDisplay, 100);
+}
+
+function clearArc() {
+  state.arcDeadline = 0;
+  state.arcDuration = 0;
+  state.arcLabel = "READY";
+
+  if (elements.arcProgress && elements.arcPath) {
+    const length = elements.arcPath.getTotalLength();
+    elements.arcProgress.style.strokeDasharray = String(length);
+    elements.arcProgress.style.strokeDashoffset = String(length);
+  }
+
+  if (elements.shellMarker) {
+    elements.shellMarker.setAttribute("cx", "82");
+    elements.shellMarker.setAttribute("cy", "102");
+  }
+
+  if (elements.arcLabel) {
+    elements.arcLabel.textContent = "READY";
+  }
+
+  if (elements.arcReadout) {
+    elements.arcReadout.textContent = "No fire mission active.";
+  }
+}
+
+function startArc(label, durationMs) {
+  state.arcDuration = durationMs;
+  state.arcDeadline = Date.now() + durationMs;
+  state.arcLabel = label === "Counterfire" ? "INCOMING SPLASH" : "OUTGOING SPLASH";
+  updateArcDisplay();
+}
+
+function updateArcDisplay() {
+  if (!elements.arcPath || !elements.arcProgress || !elements.shellMarker) return;
+
+  const length = elements.arcPath.getTotalLength();
+  elements.arcProgress.style.strokeDasharray = String(length);
+
+  if (!state.arcDeadline || !state.arcDuration) {
+    elements.arcProgress.style.strokeDashoffset = String(length);
+    return;
+  }
+
+  const remaining = Math.max(0, state.arcDeadline - Date.now());
+  const progress = clamp(1 - remaining / state.arcDuration, 0, 1);
+  const point = elements.arcPath.getPointAtLength(length * progress);
+
+  elements.arcProgress.style.strokeDashoffset = String(length * (1 - progress));
+  elements.shellMarker.setAttribute("cx", String(point.x));
+  elements.shellMarker.setAttribute("cy", String(point.y));
+
+  if (elements.arcLabel) {
+    elements.arcLabel.textContent = state.arcLabel;
+  }
+
+  if (elements.arcReadout) {
+    elements.arcReadout.textContent = `${state.arcLabel}: ${(remaining / 1000).toFixed(1)} seconds to splash.`;
+  }
 }
 
 function renderStatus() {

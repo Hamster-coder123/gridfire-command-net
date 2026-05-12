@@ -36,6 +36,7 @@ Fire missions use bearing in degrees and range in kilometers. Intelligence repor
 Shell flight uses a simplified indirect-fire time table. The browser wait matches the reported time of flight. Enemy return fire starts after your splash and uses a similar shell flight duration.
 
 The status bar includes a live countdown to splash and, after impact, to enemy counterfire.
+The counter-battery page also includes a small artillery battery graphic and shell arc visualization tied to the live splash countdown.
 
 Anti-air page:
 
